@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LELEC2103 - Results 2024</title>
+  <link rel="stylesheet" type="text/css" href="./src/leaderboard/static/css/style.css">
+  <style type="text/css">
+    .selected {
+      background-color: #77dd77;
+    }
+    .qualified {
+      background-color: orange;
+    }
+    .unqualified {
+      background-color: #bbbbbb;
+    }
+    .bonus {
+      border: medium solid #ffd700;
+    }
+    .points {
+      background-color: #bbbbbb;
+      color: #3333aa;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Electrical Engineering Master Project Contest</h1>
+    <h2>Results 2024</h2>
+  </header>
+  <div id="results_table" class="table_wrapper">
+    <table style="float: center">
+      <tbody>
+      </tbody>
+    </table>
+  </div>
+  <div align="center">
+  <table class="table_wrapper" style="float: center; --table-width: 250px;">
+    <tbody>
+      <tr>
+        <td class="unqualified">Unqualified</td>
+        <td class="qualified">Qualified</td>
+        <td class="selected">Selected</td>
+        <td class="bonus selected">Bonus</td>
+        <td class="points">Points earned</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</body>
+<script type="text/javascript">
+/////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
+RESULTS = {
+  "Classification accuracy": {
+    "BananaTeam 🍌": 14.75,
+    "Boustiflor": 18,
+    "Chirping Firefighters": 3,
+    "EcoDetect": -0.75,
+    "It's a bird!!": -0.75,
+    "Soundbusters": 0.75,
+    "The Frequentrees": 13,
+    "Totally Spies": 7.25
+  },
+  "Communication range": {
+    "BananaTeam 🍌": 3.75,
+    "Boustiflor": 12.25,
+    "Chirping Firefighters": 2.75,
+    "EcoDetect": 1.5,
+    "It's a bird!!": 10.75,
+    "Soundbusters": 14.25,
+    "The Frequentrees": 14.75,
+    "Totally Spies": 15
+  },
+  "Functionality": {
+    "BananaTeam 🍌": 14.75,
+    "Boustiflor": 16,
+    "Chirping Firefighters": 15.75,
+    "EcoDetect": 12,
+    "It's a bird!!": 14.5,
+    "Soundbusters": 12,
+    "The Frequentrees": 11,
+    "Totally Spies": 15
+  },
+  "Power consumption": {
+    "BananaTeam 🍌": 15,
+    "Boustiflor": 13,
+    "Chirping Firefighters": 7.5,
+    "EcoDetect": 12,
+    "It's a bird!!": 0,
+    "Soundbusters": 0,
+    "The Frequentrees": 0,
+    "Totally Spies": 0
+  },
+  "Robustness of detection": {
+    "BananaTeam 🍌": 16,
+    "Boustiflor": 14,
+    "Chirping Firefighters": 13.75,
+    "EcoDetect": 12,
+    "It's a bird!!": 14.5,
+    "Soundbusters": 12.5,
+    "The Frequentrees": 16,
+    "Totally Spies": 10.75
+  }
+};
+/////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////
+
+THRESHOLD = {
+  "Functionality": 8,
+  "Robustness of detection": 4,
+  "Communication range": 4,
+  "Power consumption": 4,
+  "Classification accuracy": 5  
+};
+THRESHOLD_BONUS = {
+  "Functionality": 1000, // no bonus
+  "Robustness of detection": 12,
+  "Communication range": 12,
+  "Power consumption": 12,
+  "Classification accuracy": 15  
+};
+ROUNDS = ["Functionality", "Robustness of detection", "Communication range", "Power consumption", "Classification accuracy"];
+GROUPS = Object.keys(RESULTS[ROUNDS[0]]);
+
+ROWS = {};
+
+// for each group:
+//   rounds qualified (if >threshold)
+//   rounds bonus (if >thresholdv2)
+for (group of GROUPS) {
+  ROWS[group] = {};
+  for (round of ROUNDS) {
+    ROWS[group][round] = {"result": RESULTS[round][group], "points": 0, "status": "unqualified", "bonus": false};
+    if (ROWS[group][round]["result"] >= THRESHOLD[round]) {
+      ROWS[group][round]["status"] = "qualified";
+    }
+    if (ROWS[group][round]["result"] >= THRESHOLD_BONUS[round]) {
+      ROWS[group][round]["bonus"] = true;
+    }
+  }
+}
+
+// for each round:
+//  rank group and attribute points (only if qualified) (ex-aequo!!)
+for (round of ROUNDS) {
+  array = Object.keys(ROWS).map((group) => [group, ROWS[group][round]["result"]]); // create array [group, result] because dict cant be sorted
+  sorted = array.sort((a,b) => b[1] - a[1]); // sort in descending order
+  for (let i = 0; i < sorted.length; i++) {
+    if (ROWS[sorted[i][0]][round]["status"] == "qualified") { // if not qualified, points stay at 0
+      ROWS[sorted[i][0]][round]["points"] = GROUPS.length-i;
+      for (let j = i-1; j >= 0; j--) { // for every group exaequo higher ranked, remove 0.5 points
+        if (sorted[i][1] == sorted[j][1]) {
+          ROWS[sorted[j][0]][round]["points"] -= 0.5;
+          ROWS[sorted[i][0]][round]["points"] = ROWS[sorted[j][0]][round]["points"];
+        }
+      }
+    }
+  }
+}
+
+// for each group:
+//   compute final score (functionality + 2 highest scores) (choose chosen ones)
+//   compute bonus score
+for (group of GROUPS) {
+  array = Object.keys(ROWS[group]).map(function (round) {
+    if (round == "Functionality") {
+      if (ROWS[group][round]["status"] == "qualified") {
+        ROWS[group][round]["status"] = "chosen";
+      }
+      return ['none', -1000]; // to replace Functionality round without impacting ranking
+    }
+    else {
+      return [round, ROWS[group][round]["points"]];
+    }
+  });
+  sorted = array.sort((a,b) => b[1] - a[1]); // sort in descending order
+  if (ROWS[group][sorted[0][0]]["status"] == "qualified") {ROWS[group][sorted[0][0]]["status"] = "chosen";}
+  if (ROWS[group][sorted[1][0]]["status"] == "qualified") {ROWS[group][sorted[1][0]]["status"] = "chosen";}
+  ROWS[group]["total"] = ROWS[group]["Functionality"]["points"] + ROWS[group][sorted[0][0]]["points"] + ROWS[group][sorted[1][0]]["points"];
+  ROWS[group]["bonus"] = 0;
+  for (round of ROUNDS) {
+    if (ROWS[group][round]["bonus"]) {
+      ROWS[group]["bonus"] += 0.5;
+    }
+  }
+}
+
+// rank groups based on final score
+array = Object.keys(ROWS).map((group) => [group, ROWS[group]["total"]]);
+FINALRANKING = array.sort((a,b) => b[1] - a[1]).map((arr) => arr[0]); // get ordered list, ranked by total score
+
+// display
+function createPodiumName(i, groupsranked, rows) { // add medals to names if on podium and manages ex-aequo
+  if (i == 0) {
+    return "🥇".concat(groupsranked[i]);
+  }
+  if (i == 1) {
+    if (rows[groupsranked[0]]["total"] == rows[groupsranked[1]]["total"]) {
+      return "🥇".concat(groupsranked[i]);
+    } else {
+      return "🥈".concat(groupsranked[i]);
+    }
+  }
+  if (i == 2) {
+    if (rows[groupsranked[1]]["total"] == rows[groupsranked[2]]["total"]) {
+      if (rows[groupsranked[0]]["total"] == rows[groupsranked[2]]["total"]) {
+        return "🥇".concat(groupsranked[i]);
+      } else {
+        return "🥈".concat(groupsranked[i]);
+      }
+    } else {
+      return "🥉".concat(groupsranked[i]);
+    }
+  }
+  if (i > 2) {
+    if (rows[groupsranked[2]]["total"] == rows[groupsranked[i]]["total"]) {
+      if (rows[groupsranked[1]]["total"] == rows[groupsranked[i]]["total"]) {
+        if (rows[groupsranked[0]]["total"] == rows[groupsranked[i]]["total"]) {
+          return "🥇".concat(groupsranked[i]);
+        } else {
+          return "🥈".concat(groupsranked[i]);
+        }
+      } else {
+        return "🥉".concat(groupsranked[i]);
+      }
+    } else {
+      return groupsranked[i];
+    }
+  }
+}
+
+var tbody = document.getElementById("results_table");
+
+// Clear existing rows if any
+tbody.innerHTML = '';
+
+// Create header row
+var headerRow = document.createElement("tr");
+var groupsHeader = document.createElement("th");
+groupsHeader.textContent = "Groups";
+headerRow.appendChild(groupsHeader);
+
+for (round of ROUNDS) {
+    var roundHeader = document.createElement("th");
+    roundHeader.colSpan = 2;
+    roundHeader.textContent = round;
+    headerRow.appendChild(roundHeader);
+}
+
+var scoreHeader = document.createElement("th");
+scoreHeader.textContent = "Final score";
+headerRow.appendChild(scoreHeader);
+var bonusHeader = document.createElement("th");
+bonusHeader.textContent = "Bonus";
+headerRow.appendChild(bonusHeader);
+
+tbody.appendChild(headerRow);
+
+// row by row by ranked order
+for (let i = 0; i < FINALRANKING.length; i++) {
+  var group = FINALRANKING[i];
+  var row = document.createElement("tr");
+
+  //name, add medal if needed (check ex-aequo!)
+  var groupCell = document.createElement("th");
+  podiumName = createPodiumName(i, FINALRANKING, ROWS);
+  groupCell.textContent = podiumName;
+  row.appendChild(groupCell);
+
+  // round by round in order
+  for (round of ROUNDS) {
+    // add "result (+points)" with cell color if qualified/selected, with golden border if bonus
+    var scoreCell = document.createElement("td");
+    var pointCell = document.createElement("td");
+    scoreCell.textContent = ROWS[group][round]["result"];
+    if (ROWS[group][round]["status"] == "chosen") {
+      pointCell.textContent = "+".concat(ROWS[group][round]["points"]);
+    }
+    if (ROWS[group][round]["status"] == "unqualified") {scoreCell.classList.add("unqualified");}
+    if (ROWS[group][round]["status"] == "qualified") {scoreCell.classList.add("qualified");}
+    if (ROWS[group][round]["status"] == "chosen") {scoreCell.classList.add("selected");}
+    if (ROWS[group][round]["bonus"]) {scoreCell.classList.add("bonus");}
+    pointCell.classList.add("points");
+    row.appendChild(scoreCell);
+    row.appendChild(pointCell)
+  }
+  
+  // total
+  var totalCell = document.createElement("th");
+  totalCell.textContent = ROWS[group]["total"];
+  row.appendChild(totalCell);
+
+  // bonus (with golden border ?)
+  var bonusCell = document.createElement("th");
+  bonusCell.textContent = ROWS[group]["bonus"];
+  row.appendChild(bonusCell);
+
+  tbody.appendChild(row);
+}
+</script>
+</html>
